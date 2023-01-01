@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <random>
 #include <chrono>
+#include "vec_imp.h"
 
 #define sims 100000
 
@@ -21,9 +22,7 @@ private:
     const int dim;
     double sum = 0;
 
-    std::unique_ptr<double[]> probs;
-    std::unique_ptr<double[]> initial_probs;
-    std::unique_ptr<double[]> alias;
+    std::unique_ptr<double[]> probs, initial_probs,  alias;
     std::unique_ptr<int[]> large;
     std::unique_ptr<int[]> small;
     int small_count = 0, large_count = 0;
@@ -50,13 +49,9 @@ public:
 
     }
 
-    void init(){
-//        for(int i=0; i != dim; i++){
-//            sum += weights[i];
-//        }
-
+    AliasMethods* init(){
         for (int i=0; i != dim; i++) {
-            initial_probs[i] = weights[i] * dim / sum;
+            initial_probs[i] = static_cast<double>(weights[i]) * dim / sum;
         }
 
         for (int k = 0; k != dim; k++) {
@@ -65,12 +60,14 @@ public:
             else
                 large[large_count++] = k;
         }
+
+        return this;
     }
 
     void print(){
         int i=0;
         while(i < dim){
-            std::cout<< alias[i] << std::endl;
+            std::cout<< probs[i] << std::endl;
             i++;
         }
     }
@@ -120,13 +117,11 @@ public:
             probs[large[--large_count]] = 1;
         while(small_count > 0)
             probs[small[--small_count]] = 1;
-
     }
 
     //roll a "dim" sided die to choose a side i
     //then roll a biased coin with probability of landing heads = probs[i] if true return i or return alias[i]
     auto decision(){
-
         std::random_device rd;
         std::mt19937 mt(rd());
         std::uniform_real_distribution<double> dist(0,dim);
@@ -143,35 +138,58 @@ public:
 
 int main(){
 
-    std::vector<double> weights = {40, 60, 80, 20};
+    std::vector<double> weights = {0.6, 0.2, 0.1, 0.05, 0.05};
     AliasMethods<double> *am = new AliasMethods(weights);
+    //std::unique_ptr<double[]> p_values(new double[weights.size()]);
+    // AliasVecMethods *am = new AliasVecMethods(weights);
 
     std::vector<int> val;
-
     val.reserve(sims);
 
     auto t1 = high_resolution_clock::now();
-    am->init();
-    am->populate_tables();
+    am->init()->populate_tables();
+    //avm.init();
+    //avm.populate_tables();
+    double rem = 0.0;
+    double stddev, z_score;
     for (int i = 0; i < sims; i++)
     {
+        rem = (double)i / sims;
         val.emplace_back(am->decision());
+
+        double sum = std::accumulate(val.begin(), val.end(), 0.0);
+        double m =  sum / val.size();
+        
+        double accum = 0.0;
+        std::for_each (val.begin(), val.end(), [&](const double d) {
+            accum += (d - m) * (d - m);
+        });
+
+        stddev = sqrt(accum / (val.size()));
+        z_score = (val.back() - m) / stddev;
+
+        auto t2 = (1.0 / rem) * ((double) duration_cast<std::chrono::nanoseconds>(high_resolution_clock::now() - t1).count() / 1e9);
+        auto r = t2 - ((double)duration_cast<std::chrono::nanoseconds>(high_resolution_clock::now() - t1).count()/1e9);
+
+        printf("%2.1f%% complete, Estimated %f seconds remaining, with StdDev: %f , and Z-Score: %f \r", (rem * 100.0), r, stddev, z_score);
     }
-    auto t2 = high_resolution_clock::now();
-    auto total = (double) duration_cast<std::chrono::nanoseconds >(t2-t1).count() / 1e9;
+    auto t3 = high_resolution_clock::now();
+    auto total = (double) duration_cast<std::chrono::nanoseconds >(t3-t1).count() / 1e9;
 
 
-    int find_probs = 0;
+    int find_probs = 4;
 
     int sum = 0;
     for(int i=0; i< val.size(); i++){
         if(val[i] == find_probs)
             sum += 1;
     }
-
+    //am->print();
+    std::cout << "\n";
     std::cout << "Total Time (secs): " << total;
     std::cout << "\n";
     std::cout << "Actual Prob : " << weights[find_probs] / (double)std::accumulate(weights.begin(), weights.end(), 0.0) * 100 
-            << " \nVisualised Prob: " << (double)sum / sims * 100;
-    return 0;
+            << " \nVisualised Prob: " << (double)sum / sims * 100 << "\nZ-Score: " << z_score << "\nStd Dev: " << stddev << "\n";
+
+        return 0;
 }
