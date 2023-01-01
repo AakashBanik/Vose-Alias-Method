@@ -7,6 +7,8 @@
 #include <random>
 #include <chrono>
 
+#define sims 100000
+
 using std::chrono::high_resolution_clock;
 using std::chrono::duration_cast;
 using std::chrono::duration;
@@ -143,31 +145,33 @@ int main(){
 
     std::vector<double> weights = {40, 60, 80, 20};
     AliasMethods<double> *am = new AliasMethods(weights);
-    auto t1=high_resolution_clock::now();
+
+    std::vector<int> val;
+
+    val.reserve(sims);
+
+    auto t1 = high_resolution_clock::now();
     am->init();
     am->populate_tables();
-    auto t2 = high_resolution_clock::now();
-
-    std::cout << (double) duration_cast<std::chrono::nanoseconds >(t2-t1).count() / 1e9 << " secs" << std::endl;
-//    am->print();
-
-    //verify the probs
-    std::vector<int> val;
-    val.reserve(1000);
-
-    auto t3=high_resolution_clock::now();
-    for(int i=0; i< 1000; i++)
+    for (int i = 0; i < sims; i++)
+    {
         val.emplace_back(am->decision());
-    auto t4 = high_resolution_clock::now();
-    duration<double, std::milli > tot = (t4-t3);
-    std::cout << tot.count() / 1000 << " secs";
+    }
+    auto t2 = high_resolution_clock::now();
+    auto total = (double) duration_cast<std::chrono::nanoseconds >(t2-t1).count() / 1e9;
+
+
+    int find_probs = 0;
+
     int sum = 0;
     for(int i=0; i< val.size(); i++){
-        if(val[i] == 2)
+        if(val[i] == find_probs)
             sum += 1;
-        //std::cout << val[i] << " ";
     }
+
+    std::cout << "Total Time (secs): " << total;
     std::cout << "\n";
-    std::cout << (double)sum/1000;
+    std::cout << "Actual Prob : " << weights[find_probs] / (double)std::accumulate(weights.begin(), weights.end(), 0.0) * 100 
+            << " \nVisualised Prob: " << (double)sum / sims * 100;
     return 0;
 }
