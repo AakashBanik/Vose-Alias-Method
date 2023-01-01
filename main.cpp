@@ -57,7 +57,7 @@ public:
             initial_probs[i] = weights[i] * dim / sum;
         }
 
-        for (int k = dim - 1; k >= 0; k--) {
+        for (int k = 0; k != dim; k++) {
             if (initial_probs[k]<1)
                 small[small_count++] = k;
             else
@@ -132,7 +132,7 @@ public:
         std::bernoulli_distribution coin_flip{probs[side]};
         bool value = coin_flip(mt);
 
-        if(value == true)
+        if(value) //if heads then
             return static_cast<int>(side); //call a side
         else
             return static_cast<int>(alias[side]);
@@ -148,15 +148,19 @@ int main(){
     am->populate_tables();
     auto t2 = high_resolution_clock::now();
 
-    std::cout << duration_cast<std::chrono::nanoseconds >(t2-t1).count();
+    std::cout << (double) duration_cast<std::chrono::nanoseconds >(t2-t1).count() / 1e9 << " secs" << std::endl;
 //    am->print();
 
     //verify the probs
     std::vector<int> val;
     val.reserve(1000);
 
+    auto t3=high_resolution_clock::now();
     for(int i=0; i< 1000; i++)
         val.emplace_back(am->decision());
+    auto t4 = high_resolution_clock::now();
+    duration<double, std::milli > tot = (t4-t3);
+    std::cout << tot.count() / 1000 << " secs";
     int sum = 0;
     for(int i=0; i< val.size(); i++){
         if(val[i] == 2)
