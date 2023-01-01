@@ -96,15 +96,14 @@ public:
         std::random_device rd;
         std::mt19937 mt(rd());
         std::uniform_real_distribution<double> dist(0,dim);
-        auto rn = dist(mt);
-        const int intrn = static_cast<int>(rn);
+        auto side = dist(mt);
+        std::bernoulli_distribution coin_flip{probs[side]};
+        bool value = coin_flip(mt);
 
-        auto value = static_cast<double>(rn - intrn);
-
-        if(value > probs[intrn]) //if heads then
-            return static_cast<int>(alias[intrn]); //call a side
+        if(value) //if heads then
+            return static_cast<int>(side); //call a side
         else
-            return static_cast<int>(intrn);
+            return static_cast<int>(alias[side]);
     }
 
 };
