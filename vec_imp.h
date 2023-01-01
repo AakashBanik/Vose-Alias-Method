@@ -95,13 +95,13 @@ public:
 
         std::random_device rd;
         std::mt19937 mt(rd());
-        std::uniform_int_distribution<int> dist(0,dim);
+        std::uniform_real_distribution<double> dist(0,dim);
         auto side = dist(mt);
         std::bernoulli_distribution coin_flip{probs[side]};
         bool value = coin_flip(mt);
 
         if(value) //if heads then
-            return side; //call a side
+            return (int)side; //call a side
         else
             return static_cast<int>(alias[side]);
     }

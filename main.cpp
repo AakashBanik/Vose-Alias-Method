@@ -8,7 +8,7 @@
 #include <chrono>
 #include "vec_imp.h"
 
-#define sims 100000
+#define sims 10000
 
 using std::chrono::high_resolution_clock;
 using std::chrono::duration_cast;
@@ -124,13 +124,13 @@ public:
     auto decision(){
         std::random_device rd;
         std::mt19937 mt(rd());
-        std::uniform_int_distribution<int> dist(0,dim);
+        std::uniform_int_distribution<int> dist(0,dim-1);
         auto side = dist(mt);
         std::bernoulli_distribution coin_flip{probs[side]};
         bool value = coin_flip(mt);
 
         if(value) //if heads then
-            return side; //call a side
+            return (int)side; //call a side
         else
             return static_cast<int>(alias[side]);
     }
@@ -141,7 +141,7 @@ int main(){
     std::vector<double> weights = {0.6, 0.2, 0.1, 0.05, 0.05};
     AliasMethods<double> *am = new AliasMethods(weights);
     //std::unique_ptr<double[]> p_values(new double[weights.size()]);
-    // AliasVecMethods *am = new AliasVecMethods(weights);
+    //AliasVecMethods *am = new AliasVecMethods(weights);
 
     std::vector<int> val;
     val.reserve(sims);
@@ -177,7 +177,7 @@ int main(){
     auto total = (double) duration_cast<std::chrono::nanoseconds >(t3-t1).count() / 1e9;
 
 
-    int find_probs = 4;
+    int find_probs = 0;
 
     int sum = 0;
     for(int i=0; i< val.size(); i++){
@@ -188,8 +188,9 @@ int main(){
     std::cout << "\n";
     std::cout << "Total Time (secs): " << total;
     std::cout << "\n";
-    std::cout << "Actual Prob : " << weights[find_probs] / (double)std::accumulate(weights.begin(), weights.end(), 0.0) * 100 
-            << " \nVisualised Prob: " << (double)sum / sims * 100 << "\nZ-Score: " << z_score << "\nStd Dev: " << stddev << "\n";
+    std::cout << "Actual Prob : " << weights[find_probs] / (double)std::accumulate(weights.begin(), weights.end(), 0.0) * 100
+              << " \nVisualised Prob: " << (double)sum / sims * 100;
+//    << "\nZ-Score: " << z_score << "\nStd Dev: " << stddev << "\n";
 
-        return 0;
+    return 0;
 }
